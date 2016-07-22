@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django import VERSION
 from django.core import exceptions, validators
 from django.db import models
 from django.utils import six
@@ -12,12 +13,20 @@ from .codecs import decode_csv_to_list, encode_list_to_csv
 from .validators import MaxChoicesValidator, MaxLengthValidator
 import select_multiple_field.forms as forms
 
+DJANGO_VERSION_110 = VERSION[0] == 1 and VERSION[1] >= 10
 
 DEFAULT_DELIMITER = ','
 
+if DJANGO_VERSION_110:
+    class SelectMultipleFieldMetaclass(type):
+        pass
+else:
+    class SelectMultipleFieldMetaclass(models.SubfieldBase):
+        pass
+
 
 @python_2_unicode_compatible
-class SelectMultipleField(six.with_metaclass(models.SubfieldBase,
+class SelectMultipleField(six.with_metaclass(SelectMultipleFieldMetaclass,
                                              models.Field)):
     """Stores multiple selection choices as serialized list"""
 
