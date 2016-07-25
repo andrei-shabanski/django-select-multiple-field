@@ -13,16 +13,14 @@ from .codecs import decode_csv_to_list, encode_list_to_csv
 from .validators import MaxChoicesValidator, MaxLengthValidator
 import select_multiple_field.forms as forms
 
-DJANGO_VERSION_110 = VERSION[0] == 1 and VERSION[1] >= 10
 
 DEFAULT_DELIMITER = ','
 
+DJANGO_VERSION_110 = VERSION[0] == 1 and VERSION[1] >= 10
 if DJANGO_VERSION_110:
-    class SelectMultipleFieldMetaclass(type):
-        pass
+    SelectMultipleFieldMetaclass = type
 else:
-    class SelectMultipleFieldMetaclass(models.SubfieldBase):
-        pass
+    SelectMultipleFieldMetaclass = models.SubfieldBase
 
 
 @python_2_unicode_compatible
@@ -66,13 +64,25 @@ class SelectMultipleField(six.with_metaclass(SelectMultipleFieldMetaclass,
     def get_internal_type(self):
         return "CharField"
 
+    def from_db_value(self, value, expression, connection, context):
+        """
+        Converts a value as returned by the database to a Python object.
+
+        value is Encoded strings from the database
+
+        Returns list
+        """
+        if value is None:
+            return value
+
+        return decode_csv_to_list(value)
+
     def to_python(self, value):
         """
         When SelectMultipleField is assigned a value, this method coerces
         into a list usable by Python
 
-        value is Encoded strings from the database or Python native types in
-        need of validation
+        value is Python native types in need of validation
 
         Raises ValidationError if value is not in choices or if invalid type
 
